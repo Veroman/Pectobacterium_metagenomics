@@ -1,4 +1,4 @@
-# Pectobacterium_metagenomics
+# Pectobacterium and microbiome analysis of potato stem samples
 Please download or obtain access to following before doing the analysis
 
 ##  Programs
