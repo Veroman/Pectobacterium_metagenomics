@@ -25,7 +25,7 @@ code
 ```
 
 
-## Remove host reads
+## Remove host reads before metagenomic analysis
 ### BWA-mem
 ```bash
 code
