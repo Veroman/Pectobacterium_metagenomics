@@ -2,6 +2,7 @@
 Please download or obtain access to following before doing the analysis
 
 ##  Programs
+Clean raw reads
 - [Trimmomatic](https://github.com/usadellab/Trimmomatic)
   
 - [Kraken](http://ccb.jhu.edu/software/kraken/)
