@@ -3,9 +3,12 @@ Please download or obtain access to following before doing the analysis
 
 ##  Programs
 - [Trimmomatic](https://github.com/usadellab/Trimmomatic)
+  
 - [Kraken](http://ccb.jhu.edu/software/kraken/)
-- [BWA] (https://bio-bwa.sourceforge.net/bwa.shtml)
-- [Samtools] (
+- [Sourmash](https://sourmash.readthedocs.io/en/latest/)
+  
+- [BWA](https://bio-bwa.sourceforge.net/bwa.shtml)
+- [Samtools](https://www.htslib.org/doc/samtools.html)
 
 ## Illumina QC
 ### Trimmomatic
