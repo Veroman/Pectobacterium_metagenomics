@@ -4,6 +4,7 @@ Please download or obtain access to following before doing the analysis
 ##  Programs
 - [Trimmomatic](https://github.com/usadellab/Trimmomatic)
 - [Kraken](http://ccb.jhu.edu/software/kraken/)
+- [BWA] (link)
 
 ## Illumina QC
 ### Trimmomatic
@@ -24,3 +25,12 @@ code
 ```
 
 
+## Remove host reads
+### BWA-mem
+```bash
+code
+```
+### Samtools
+```bash
+code
+```
