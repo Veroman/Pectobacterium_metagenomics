@@ -23,12 +23,18 @@ code
 ## Metagenome Analysis
 ### Kraken - Create a database using NCBI genomes
 ```bash
-code
+ 
 ```
 
 ### Kraken - run the analysis
 ```bash
-code
+cd /where-you-store-kraken2-location
+./kraken2-build --download-taxonomy --db /desired-output-location
+
+for files in /genome-storage-location/*.fna; do \
+./kraken2-build --add-to-library $file --db /desired-output-location; done
+
+./kraken2-build --build --db /output-location
 ```
 ### Sourmash
 Sourmask sketch to DB
