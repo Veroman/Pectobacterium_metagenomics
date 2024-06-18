@@ -26,9 +26,11 @@ code
 cd /kraken2
 ./kraken2-build --download-taxonomy --db /output-location
 
-for files in /#genomes/*.fna; do \
-./kraken2-build --add-to-library $file --db /desired-output-location; done
+#add genomes to database library
+for files in /location/*.fna; do \
+./kraken2-build --add-to-library $file --db /output-location; done
 
+#build the database
 ./kraken2-build --build --db /output-location
 ```
 
