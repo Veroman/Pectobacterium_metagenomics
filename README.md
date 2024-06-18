@@ -93,20 +93,25 @@ N=$(basename $i .fastq); bwa mem hostgenome.fa ${i}_R1.fastq ${i}_R2.fastq \
 ### Samtools
 ```bash
 module load samtools/1.18
-    ##convert to bam files and sort
-        cd /storage/group/vfr5124/default/romanreynaLAB/SMS/CB.Potato.Project/samtool.results
-        #for i in /storage/group/vfr5124/default/romanreynaLAB/SMS/CB.Potato.Project/bwa.outputs/*.sam; do \
-        #N=$(basename $i .sam); samtools sort $i -O bam -o $N.bam; done
-    
-    ##comparing what "sticks" to the potato reference and keeping what doesnt work
-    #for i in *.bam; do \
-    #N=$(basename $i .bam); samtools view -b -f 4 $i -o $N.unmapped.bam; done
- 
-    ##sorting into unmapped and sorted files
-    for i in *.unmapped.bam; do \
-    N=$(basename $i .unmapped.bam); samtools sort $i -n -o $N.sorted.bam; done
- 
-    ##converting to fastq files for next steps
-    for i in *.sorted.bam; do \
-    N=$(basename $i .sorted.bam); samtools fastq $i > $N.nonpotato.fastq; done
+```
+convert to bam files and sort
+```bash
+cd /output-location
+for i in /bwamem-output-location/*.sam; do \
+N=$(basename $i .sam); samtools sort $i -O bam -o $N.bam; done
+ ```   
+Comparing what maps to the potato reference and keeping the unmapped
+```bash
+for i in *.bam; do \
+N=$(basename $i .bam); samtools view -b -f 4 $i -o $N.unmapped.bam; done
+ ```
+sorting into unmapped and sorted files
+```bash
+for i in *.unmapped.bam; do \
+N=$(basename $i .unmapped.bam); samtools sort $i -n -o $N.sorted.bam; done
+ ```
+converting to fastq files for next steps
+```bash
+for i in *.sorted.bam; do \
+N=$(basename $i .sorted.bam); samtools fastq $i > $N.nonpotato.fastq; done
 ```
