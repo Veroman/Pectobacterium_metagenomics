@@ -51,7 +51,8 @@ for files in /genomes/*.fna; do \
 ```bash
 ./kraken2-build --build --db /folder/DB
 ```
-
+4. Have access to the database.
+The compressed database with all 24 Pectobacterium genera can be found in Figshare under the link: 10.6084/m9.figshare.26357359
 ### Kraken - run the analysis
 ```bash
 #input-location/ is a folder that contains all the clean metagenomic raw reads.
