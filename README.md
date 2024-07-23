@@ -30,6 +30,7 @@ ILLUMINACLIP:NexteraPE-PE.fa:2:30:10 \
 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:100;done
 
 #We use /cleanreads/ as the outputfolder
+#make sure your PATH for your raw data does not contain underscores as that will be cut and the script will not work.
 ```
 
 ## Metagenome Analysis
@@ -98,7 +99,7 @@ N=$(basename $i .fastq); bwa mem hostgenome.fa ${i}_R1.fastq ${i}_R2.fastq \
 > $N.sam; done
 ```
 ### Samtools
-The reads not corresponding to potatoes need to be extracted from the SAM file.
+The unmapped reads to the potato genome can be extracted from the SAM file. The unmapped reads correspond to the microbial reads.
 1. convert to bam files and sort
 ```bash
 cd /output-location
