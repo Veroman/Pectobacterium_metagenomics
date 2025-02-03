@@ -33,7 +33,21 @@ LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:100;done
 #We use /cleanreads/ as the outputfolder
 #make sure your PATH for your raw data does not contain underscores as that will be cut and the script will not work.
 ```
-
+## Use trimmomatic unpaired reads
+Sometimes there are several unpaired reads after cleaning with Trimmomatic, most likely due to issues with the sequencer. 
+To avoid losing that information, merging paired-end reads and concatenating them with the unpaired reads to run the next programs as single-end reads is possible.
+1. merge paired-end reads
+```bash
+#merge.pl is a script from Kraken to merge reads like this ATGCxATGG
+for i in $(ls trimmo/*.paired.fastq | grep "_R1" | cut -f 1 -d "_"); do \
+N=$(basename $i .paired.fastq); ./merger2.pl --fq --output-format legacy \
+${i}_R1.paired.fastq ${i}_R2.paired.fastq > /trimmo-merge/$N.paired.fastq; done
+```
+2. Concat 
+```bash
+#combine all fq files as one.
+cat S1_unpairedforR1.fastq S1_unpairedforR2.fastq S1_paired.fastq > S1_all.fq
+```
 ## Metagenome Analysis
 ### Kraken - Create a database using NCBI genomes
 1. Download Taxonomy to create a database called DB
@@ -52,7 +66,7 @@ for files in /genomes/*.fna; do \
 ```bash
 ./kraken2-build --build --db /folder/DB
 ```
-### Kraken - run the analysis
+### Kraken - run the analysis for paired-end reads
 ```bash
 #input-location/ is a folder that contains all the clean metagenomic raw reads.
 
@@ -63,6 +77,18 @@ N=$(basename $i .fastq); ./kraken2  \
 --paired --report $N.report \
 --output $N.kraken \
 ${i}_R1.fastq ${i}_R2.fastq; done
+```
+### Kraken - run the analysis for single-end reads or combined reads
+```bash
+#input-location/ is a folder that contains all the concatenated raw reads.
+
+cd /kraken2
+for i in /input-location/*.fq; do \
+N=$(basename $i .fastq); ./kraken2  \
+--db /folder/DB \
+--report $N.report \
+--output $N.kraken \
+${i}.fq; done
 ```
 
 ### Sourmash
@@ -78,8 +104,13 @@ sourmash index -k 31 genomesDB.sbt.zip genomesDB/*.sig
 ```
 Create signatures for the metagenomic reads
 ```bash
+#for paired-end reads
 for i in $(ls metagenomic_reads/*.fq | grep "_R1" | cut -f 1 -d "_"); do \
 N=$(basename $i .fq);sourmash sketch dna -p k=31 ${i}_R1.fq ${i}_R2.fq --name $N \
+-o $N.zip;done
+#for single-end reads
+for i in *.fq; do \
+N=$(basename $i .fq);sourmash sketch dna -p k=31 ${i}.fq --name $N \
 -o $N.zip;done
 ```
 Compare DB signatures with the metagenomics reads
@@ -94,9 +125,13 @@ Another option is to remove the host (potato) reads before the analysis
 module load bwa/0.7.17
 bwa index hostgenome.fa \
 
+#for paired-end reads
 for i in $(ls metagenomicreads/*.fastq | grep "_R1" | cut -f 1 -d "_"); do \
 N=$(basename $i .fastq); bwa mem hostgenome.fa ${i}_R1.fastq ${i}_R2.fastq \
 > $N.sam; done
+#for single-end reads
+for i in *.fastq; do \
+N=$(basename $i .fastq); bwa mem hostgenome.fa ${i}.fastq > $N.sam; done
 ```
 ### Samtools
 The unmapped reads to the potato genome can be extracted from the SAM file. The unmapped reads correspond to the microbial reads.
