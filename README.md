@@ -94,7 +94,7 @@ ${i}.fq; done
 Create a collection of signatures (a database)
 1. Sourmash sketch to create the signature
 ```bash
-#genomes is a folder that 
+#genomes is a folder that has all the bacterial genomes of interest
 sourmash sketch dna -p k=31 genomes/*.fna -outdir genomesDB
 ```
 2. Index the DB
