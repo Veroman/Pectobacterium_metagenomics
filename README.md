@@ -33,8 +33,7 @@ LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:100;done
 #We use /cleanreads/ as the outputfolder
 #make sure your PATH for your raw data does not contain underscores as that will be cut and the script will not work.
 ```
-## Use trimmomatic unpaired reads
-Sometimes there are several unpaired reads after cleaning with Trimmomatic, most likely due to issues with the sequencer. 
+Use trimmomatic unpaired reads: Sometimes there are several unpaired reads after cleaning with Trimmomatic, most likely due to issues with the sequencer. 
 To avoid losing that information, merging paired-end reads and concatenating them with the unpaired reads to run the next programs as single-end reads is possible.
 1. merge paired-end reads
 ```bash
