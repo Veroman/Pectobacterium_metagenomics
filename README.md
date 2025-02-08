@@ -7,11 +7,12 @@ Clean metagenomic raw reads
 
 Metagenomic analysis 
 - [Kraken2](http://ccb.jhu.edu/software/kraken/)
+- [KrakenTools](https://github.com/jenniferlu717/KrakenTools)
 - [Sourmash](https://sourmash.readthedocs.io/en/latest/)
 - [Pectobacterium custom-made Database](https://doi.org/10.6084/m9.figshare.26357359) 
 
 Map host genome and remove mapped reads
-- [BWA](https://bio-bwa.sourceforge.net/bwa.shtml)
+- [BWA](https://github.com/lh3/bwa)
 - [Samtools](https://www.htslib.org/doc/samtools.html)
 
 ## Illumina QC
@@ -42,13 +43,13 @@ for i in $(ls trimmo/*.paired.fastq | grep "_R1" | cut -f 1 -d "_"); do \
 N=$(basename $i .paired.fastq); ./merger2.pl --fq --output-format legacy \
 ${i}_R1.paired.fastq ${i}_R2.paired.fastq > /trimmo-merge/$N.paired.fastq; done
 ```
-2. Concat 
+2. Concatenate the paired and unpaired reads 
 ```bash
 #combine all fq files as one.
 cat S1_unpairedforR1.fastq S1_unpairedforR2.fastq S1_paired.fastq > S1_all.fq
 ```
 ## Metagenome Analysis
-### Kraken - Create a database using NCBI genomes
+### Kraken2 - Create a database using NCBI genomes
 1. Download Taxonomy to create a database called DB
 ```bash
 cd /kraken2/
@@ -65,7 +66,7 @@ for files in /genomes/*.fna; do \
 ```bash
 ./kraken2-build --build --db /folder/DB
 ```
-### Kraken - run the analysis for paired-end reads
+### Kraken2 - run the analysis for paired-end reads
 ```bash
 #input-location/ is a folder that contains all the clean metagenomic raw reads.
 
@@ -77,7 +78,7 @@ N=$(basename $i .fastq); ./kraken2  \
 --output $N.kraken \
 ${i}_R1.fastq ${i}_R2.fastq; done
 ```
-### Kraken - run the analysis for single-end reads or combined reads
+### Kraken2 - run the analysis for single-end reads or combined reads
 ```bash
 #input-location/ is a folder that contains all the concatenated raw reads.
 
@@ -121,21 +122,22 @@ Another option is to remove the host (potato) reads before the analysis
 
 ### BWA-mem
 ```bash
-module load bwa/0.7.17
-bwa index hostgenome.fa \
+cd /BWA-0.7.18/ 
+./bwa index hostgenome.fa
 
 #for paired-end reads
 for i in $(ls metagenomicreads/*.fastq | grep "_R1" | cut -f 1 -d "_"); do \
-N=$(basename $i .fastq); bwa mem hostgenome.fa ${i}_R1.fastq ${i}_R2.fastq \
+N=$(basename $i .fastq); ./bwa mem hostgenome.fa ${i}_R1.fastq ${i}_R2.fastq \
 > $N.sam; done
 #for single-end reads
 for i in *.fastq; do \
-N=$(basename $i .fastq); bwa mem hostgenome.fa ${i}.fastq > $N.sam; done
+N=$(basename $i .fastq); ./bwa mem hostgenome.fa ${i}.fastq > $N.sam; done
 ```
 ### Samtools
 The unmapped reads to the potato genome can be extracted from the SAM file. The unmapped reads correspond to the microbial reads.
 1. convert to bam files and sort
 ```bash
+module load samtools/1.18
 cd /output-location
 for i in /bwamem-output-location/*.sam; do \
 N=$(basename $i .sam); samtools sort $i -O bam -o $N.bam; done
