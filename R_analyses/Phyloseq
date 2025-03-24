@@ -1,0 +1,305 @@
+##Phyloseq Analysis of Final Raw Greenhouse Data ##
+#
+#
+#
+####Installing packages####
+##
+##
+setwd("~/Desktop/Masters work/Final-greenhouse-samples/VPDB")
+load("/Users/sadieseaman/Desktop/Masters work/Final-greenhouse-samples/Phyloseq-unmapped-PVDB.RData")
+
+#install.packages("tidyverse")
+#install.packages("remotes")
+#install.packages("ggpubr")
+library("phyloseq")
+library("ape")
+library("microbiome")
+library("ggplot2")
+library(plyr)
+library(tidyr)
+library(dplyr)
+library(devtools)
+library(ComplexHeatmap)
+library(UpSetR)
+library(ggpubr)
+#remotes::install_github('microbiome/OMA')
+#remotes::install_github("vegandevs/vegan")
+
+#install and load relevant packages
+p1 <- c("tidyverse", "vegan", "BiocManager")
+p2 <- c("phyloseq", "ANCOMBC", "DESeq2", "ComplexHeatmap")
+load_package <- function(p) {
+  if (!requireNamespace(p, quietly = TRUE)) {
+    ifelse(p %in% p1, 
+           install.packages(p, repos = 
+                              "http://cran.us.r-project.org/"), 
+           BiocManager::install(p))
+  }
+  library(p, character.only = TRUE, quietly = TRUE)
+}
+invisible(lapply(c(p1,p2), load_package))
+##
+## vegan version 2.6-4
+## bioconductor version 3.19 (BiocManager 1.30.22), R 4.4.0
+##complex heat map version: 2.19.0
+#
+rm(p1, p2, load_package)
+#
+pacman::p_load(
+  rio,             # import/export
+  here,            # relative routes
+  tidyverse,       # general management of data and visualization
+  ape,             # import and export phylogenetic trees
+  ggtree,          # visualize the phylogenetic trees
+  treeio,          # visualize phylogenetic documents
+  ggnewscale)      # Add new color scales
+
+
+
+#### Building unmapped reads phyloseq project ####
+otu <- unmapped.OTU.VPDB
+#rm(unmapped.OTU.VPDB)
+#change colnames and remove first column
+#colnames(otu) <- paste0("sample", 1:ncol(otu))
+#rownames(otu) <- paste0("OTU", 1:nrow(otu))
+#check data
+head(otu)
+
+###taxonomy table###
+##
+taxonomy <- unmapped.taxonomy.VPDB
+#rm(unmapped.taxonomy.VPDB)
+#make sure names of columns are correct#
+colnames(taxonomy) <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
+#ensuring row names are OTU1, OTU2...#
+rownames(taxonomy) <- paste0("OTU", 1:nrow(taxonomy))
+taxonomy <- taxonomy[c(1:7)]
+#check data
+head(taxonomy)
+
+###Metadata###
+##
+
+metadata <- metadata
+OTU = otu_table(as.matrix(otu), taxa_are_rows = TRUE)
+TAX = tax_table(as.matrix(taxonomy))
+SAMPLE <- sample_data(metadata)
+#TREE = read_tree("tree.nwk")
+# merge the data
+ps <- phyloseq(OTU, TAX, SAMPLE)
+#common error: component sample names do not match
+sample_names(OTU) #colnames are site location
+sample_names(SAMPLE) #sample names are sample1/2/3...
+#go back and change colnames of OTU to match sample names of SAMPLE
+
+##Check statistical significance of phyloseq object
+# Compute Bray-Curtis distance matrix from the phyloseq object
+dist_matrix <- phyloseq::distance(ps, method = "bray")
+# Extract the sample metadata (grouping variable, e.g., SampleType)
+sample_data_df <- data.frame(sample_data(ps))  # Convert to data frame
+# Make sure the grouping variable (e.g., SampleType) is a factor
+group <- sample_data_df$Treatment
+group <- factor(group)
+# Run adonis2 with the Bray-Curtis distance matrix and the grouping variable
+adonis_result <- adonis2(dist_matrix ~ group, data = sample_data_df)
+# Print the results
+print(adonis_result)
+# adonis2(formula = dist_matrix ~ group, data = sample_data_df)
+# Df SumOfSqs      R2      F Pr(>F)    
+# group     2   3.5107 0.80108 20.136  0.001 ***
+#   Residual 10   0.8717 0.19892                  
+# Total    12   4.3824 1.00000                  
+# ---
+
+
+
+phyloseq(OTU, TAX, SAMPLE)
+
+#output of Phyloseq
+# phyloseq-class experiment-level object
+# otu_table()   OTU Table:         [ 42 taxa and 13 samples ]
+# sample_data() Sample Data:       [ 13 samples by 6 sample variables ]
+# tax_table()   Taxonomy Table:    [ 42 taxa by 7 taxonomic ranks ]
+
+#### Ordinate data: unassigned included ####
+##
+##
+set.seed(4235421)
+#proj <- get ordination(pseq, "MDS", "bray")
+#
+ord1 <- ordinate(ps, "MDS", "bray")
+#
+#plot ordination
+
+p <- plot_ordination(ps, ord1, shape = "Treatment", color = "Treatment")
+p + theme_bw() + geom_point(size = 6) + labs(title = "Ordination (MDS) Plot of Data by Treatment") + theme(plot.title = element_text(hjust = 0.5, size = 20)) + stat_ellipse() + xlim(-1.25,0.7) + ylim(-0.6,0.75)
+#great to have the ellipses but there is currently no statistical value, so we add adonis2
+
+### Calculate distance matrix (UniFrac or Bray-Curtis)
+ps.dist <- phyloseq::distance(ps, method = "bray")
+
+## Perform adonis2 test
+adonis_result <- adonis2(ps.dist ~ Treatment, data = metadata)
+
+# Create ordination
+ord1 <- ordinate(ps, method = "MDS", "bray", distance = ps.dist)
+
+
+p <- plot_ordination(ps, ord1, shape = "Treatment", color = "Treatment")
+p + theme_bw() + 
+  geom_point(size = 6) + 
+  labs(title = "Ordination (MDS) Plot of Data by Treatment",
+       subtitle = paste("Adonis p-value:", 
+                        round(adonis_result$`Pr(>F)`[1], 3))) + 
+  theme(plot.title = element_text(hjust = 0.5, size = 20)) + 
+  stat_ellipse() + xlim(-1.25,0.7) + ylim(-0.6,0.75)
+
+# Convert ps.dist to a matrix if it's in dist format
+ps.dist <- as.matrix(ps.dist)
+# Run adonis2 as you already did
+adonis_result <- adonis2(ps.dist ~ Treatment, data = metadata)
+# Perform pairwise comparisons using vegan
+ps_mock_pecto <- subset(metadata, Treatment %in% c("Mock", "Pectobacterium"))
+ps_dist_mock_pecto <- ps.dist[rownames(ps.dist) %in% rownames(ps_mock_pecto), colnames(ps.dist) %in% rownames(ps_mock_pecto)]
+# Run adonis2 for Mock vs Pecto
+adonis_mock_pecto <- adonis2(ps_dist_mock_pecto ~ Treatment, data = ps_mock_pecto)
+
+# Subset for "Mock vs Verticillium"
+ps_mock_verticillium <- subset(metadata, Treatment %in% c("Mock", "Verticillium"))
+ps_dist_mock_verticillium <- ps.dist[rownames(ps.dist) %in% rownames(ps_mock_verticillium), colnames(ps.dist) %in% rownames(ps_mock_verticillium)]
+
+# Run adonis2 for Mock vs Verticillium
+adonis_mock_verticillium <- adonis2(ps_dist_mock_verticillium ~ Treatment, data = ps_mock_verticillium)
+
+# Extract p-values for each pairwise comparison
+mock_pecto_pvalue <- adonis_mock_pecto$`Pr(>F)`[1]
+mock_verticillium_pvalue <- adonis_mock_verticillium$`Pr(>F)`[1]
+
+# Create ordination plot with pairwise comparison p-values
+p <- plot_ordination(ps, ord1, shape = "Treatment", color = "Treatment")
+p + theme_bw() + 
+  geom_point(size = 6) + 
+  labs(title = "Ordination (MDS) Plot of Data by Treatment",
+       subtitle = paste("Adonis p-value:", 
+                        round(adonis_result$`Pr(>F)`[1], 3), "\n",
+                        "Mock vs Pecto p-value:", round(mock_pecto_pvalue, 3), "\n",
+                        "Mock vs Verticillium p-value:", round(mock_verticillium_pvalue, 3))) + 
+  theme(plot.title = element_text(hjust = 0.5, size = 20)) + 
+  stat_ellipse() + 
+  xlim(-1.25, 0.7) + ylim(-0.6, 0.75)
+
+
+#save as a pdf and edit in adobe illustrator
+
+#### Diversity ####
+#
+#
+# Calculate Shannon and Simpson indices
+richness_data <- estimate_richness(ps, measures = c("Shannon", "Simpson"))
+
+# Extract metadata from Phyloseq
+metadata_df <- as.data.frame(sample_data(ps))
+
+# Combine Shannon and Simpson with metadata
+richness_data <- cbind(metadata_df, richness_data)
+
+# Perform Kruskal-Wallis test for Shannon and Simpson indices
+kruskal_shannon <- kruskal.test(Shannon ~ Treatment, data = richness_data)
+kruskal_simpson <- kruskal.test(Simpson ~ Treatment, data = richness_data)
+
+# Perform pairwise Wilcoxon tests (Kruskal-Wallis' post-hoc)
+pairwise_shannon <- pairwise.wilcox.test(richness_data$Shannon, richness_data$Treatment, p.adjust.method = "BH")
+pairwise_simpson <- pairwise.wilcox.test(richness_data$Simpson, richness_data$Treatment, p.adjust.method = "BH")
+
+# Print Kruskal-Wallis results
+cat("Kruskal-Wallis test for Shannon:", kruskal_shannon$p.value, "\n")
+cat("Kruskal-Wallis test for Simpson:", kruskal_simpson$p.value, "\n")
+
+# Create the plot with Kruskal-Wallis and pairwise Wilcoxon annotations
+p <- plot_richness(ps, x = "Treatment", shape = "Treatment", color = "Treatment", 
+                   measures = c("Shannon", "Simpson"))
+
+# Add boxplot, points, and comparisons with stat_compare_means (using Kruskal-Wallis)
+p + 
+  geom_point(size = 3) + 
+  geom_boxplot(alpha = 0.6) +
+  theme(legend.position = "none", 
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 12)) +
+  stat_compare_means(aes(group = Treatment), 
+                     label = "p.format", 
+                     method = "kruskal.test", 
+                     hide.ns = TRUE) +
+  stat_compare_means(comparisons = list(c("Mock", "Pectobacterium"), c("Mock", "Verticillium")),
+                     method = "wilcox.test", 
+                     label = "p.format", 
+                     hide.ns = TRUE)
+
+
+####Plotting ####
+
+#filter based on abundance including unassigned taxa#
+ps_filter_5 = filter_taxa(ps, function(x) sum(x) > 5, TRUE)
+
+ps_filter_3 = filter_taxa(ps, function(x) sum(x) > 3, TRUE)
+
+ps_filter_1 = filter_taxa(ps, function(x) sum(x) > 1, TRUE)
+##Check statistical significance of phyloseq object
+# Compute Bray-Curtis distance matrix from the phyloseq object
+dist_matrix <- phyloseq::distance(ps_filter_1, method = "bray")
+# Extract the sample metadata (grouping variable, e.g., SampleType)
+sample_data_df <- data.frame(sample_data(ps_filter_1))  # Convert to data frame
+# Make sure the grouping variable (e.g., SampleType) is a factor
+group <- sample_data_df$Treatment
+group <- factor(group)
+# Run adonis2 with the Bray-Curtis distance matrix and the grouping variable
+adonis_result <- adonis2(dist_matrix ~ group, data = sample_data_df)
+# Print the results
+print(adonis_result)
+# adonis2(formula = dist_matrix ~ group, data = sample_data_df)
+#          Df  SumOfSqs   R2      F   Pr(>F)    
+# group     2   3.4701 0.7875 18.529  0.001 ***
+# Residual 10   0.9364 0.2125                  
+# Total    12   4.4065 1.0000                  
+# ---
+
+#check data
+plot_bar(ps_filter_5, fill = "Species") + 
+  facet_grid(~Treatment, scale = "free", space = "free") +
+  labs(title = "Relative Abundance of Families (>5%) per Sample Treatment: Tailored Database",
+       x = "Sample", y = "Abundance (percentage)") + theme(plot.title = element_text(hjust = 0.5))
+
+plot_bar(ps_filter_3, fill = "Species") + 
+  facet_grid(~Treatment, scale = "free", space = "free") +
+  labs(title = "Relative Abundance of Families (>3%) per Sample Treatment: Tailored Database",
+       x = "Sample", y = "Abundance (percentage)") + theme(plot.title = element_text(hjust = 0.5, size = 20)) + theme(legend.position = "bottom")
+
+plot_bar(ps_filter_1, fill = "Species") + 
+  facet_grid(~Treatment, scale = "free", space = "free") +
+  labs(title = "Relative Abundance of Families (>1%) per Sample Treatment: Tailored Database",
+       x = "Sample", y = "Abundance (percentage)") + theme(plot.title = element_text(hjust = 0.5, size = 20)) + theme(legend.position = "bottom")
+
+# Run statistical tests (e.g., ANOVA or Kruskal-Wallis for treatment comparison)
+
+phyloseq::psmelt(ps_filter_1) %>%
+  ggplot(data = ., aes(x = Treatment, y = Abundance)) +
+  geom_boxplot(outlier.shape  = NA) +
+  geom_jitter(aes(color = OTU), height = 0, width = .02) +
+  labs(x = "", y = "Abundance\n") +
+  facet_wrap(~ Species, scales = "free")
+
+rm(ps_filter_1, ps_filter_3, ps_filter_5)
+
+
+#### Upset Plots ####
+# Create UpSet plot
+upset(fromList(unmapped.counts.PVDB), nsets = 13, order.by = "freq")
+
+#
+
+rm(ord1, otu, p, ps, ps1, SAMPLE, OTU, TAX, taxonomy, adonis_result, ps2, ps.dist, unique_otus, unique_taxa, otu_pa, get_sample_otus, get_unique_taxa, ordination_data, pairwise_comparisons, pairwise_shannon, pairwise_simpson, ps_mock_pecto, ps_mock_verticillium, ps_dist_mock_pecto, ps_dist_mock_verticillium, richness_data, richness_df, sample_data_df, metadata_df, adonis_mock_pecto, adonis_mock_verticillium, dist_matrix, group, mock_pecto_pvalue, mock_verticillium_pvalue, kruskal_shannon, kruskal_simpson)
+
+
+#### save workspace with current imported files####
+save.image("Phyloseq-unmapped-PVDB.RData")
+
